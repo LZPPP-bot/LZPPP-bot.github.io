@@ -1,0 +1,535 @@
+<html lang="en">
+<head>
+    <!--    对于中文网页需要使用 <meta charset="utf-8"> 声明编码，否则会出现乱码。-->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Display a map</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.19/esri/themes/light/main.css">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//apps.bdimg.com/libs/jqueryui/1.10.4/css/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="map.css">
+    <script src="echarts.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/2.0.0/jquery.min.js"></script>
+    <script src="//apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://js.arcgis.com/4.19/init.js"></script>
+    <script src="https://js.arcgis.com/4.19/"></script>
+    <script>
+        let map;
+        //(1)添加模块
+        require([
+            "esri/config",
+            "esri/Map",
+            "esri/views/MapView",
+
+            "esri/widgets/Locate",
+            "esri/widgets/Track",
+
+            "esri/Graphic",
+
+            "esri/layers/GraphicsLayer",
+            "esri/layers/FeatureLayer",
+            "esri/layers/MapImageLayer",
+
+            "esri/tasks/QueryTask",
+            "esri/tasks/support/Query",
+            "esri/PopupTemplate",
+            "esri/layers/GeoJSONLayer",
+            "esri/symbols/SimpleFillSymbol",
+        ], function (
+            esriConfig,
+            Map,
+            MapView,
+
+            Locate,
+            Track,
+
+            Graphic,
+
+            GraphicsLayer,
+            FeatureLayer,
+            MapImageLayer,
+
+            QueryTask,
+            Query,
+            PT,
+            GeoJSONLayer,
+            SimpleFillSymbol,
+        ) {
+            // (2)密钥
+            esriConfig.apiKey = "AAPK59eb1e8ca6a14cdeb2fb77ba28ead53cKeCqMvRbO5s-a5zkwvfJRORlq_2Zcaj0yDm-viwss9R51sryLCdDotO85poTh_uO";
+            //(3)背景地图
+            map = new Map({
+                basemap: "arcgis-navigation",
+                ground: "world-elevation"
+            });
+            //(4)创建地图视图
+            const view = new MapView({
+                map: map,
+                center: [114.805, 13.027], // Longitude, latitude
+                zoom: 4, // Zoom level
+                container: "viewDiv", // Div element
+            });
+            view.ui.components = [];
+            // (5)创建缩略图视图
+            //缩略图的地图和窗口______1
+            overview1 = new MapView({
+                map: map,
+                container: "overviewDiv1" // Div element
+            });
+            //清空缩略图内控件
+            overview1.ui.components = [];
+            //缩略图联动
+            view.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap1();
+            });
+            function LinkMap1() {
+                overview1.zoom = view.zoom;
+                overview1.center = view.center;
+                overview1.scale = view.scale*8;
+            }
+
+            overview1.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap2();
+            });
+            function LinkMap2() {
+                view.zoom = overview1.zoom;
+                view.center = overview1.center;
+            }
+            overview1.on("click", function () {
+                LinkMap3();
+            });
+            function LinkMap3() {
+                view.map = overview1.map;
+            }
+
+            //缩略图的地图和窗口______2
+            const overviewmap2 = new Map({
+                basemap: "arcgis-dark-gray"
+            });
+            const overview2 = new MapView({
+                container: "overviewDiv2",
+                map: overviewmap2
+            });
+            //清空缩略图内控件
+            overview2.ui.components = [];
+            //缩略图联动
+            view.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap4();
+            });
+            function LinkMap4() {
+                overview2.zoom = view.zoom;
+                overview2.center = view.center;
+                overview2.scale = view.scale*8;
+            }
+
+            overview2.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap5();
+            });
+            function LinkMap5() {
+                view.zoom = overview2.zoom;
+                view.center = overview2.center;
+            }
+            overview2.on("click", function () {
+                LinkMap6();
+            });
+            function LinkMap6() {
+                view.map = overview2.map;
+            }
+            //缩略图的地图和窗口______3
+            const overviewmap3 = new Map({
+                basemap: "arcgis-light-gray"
+            });
+            const overview3 = new MapView({
+                container: "overviewDiv3",
+                map: overviewmap3
+            });
+            //清空缩略图内控件
+            overview3.ui.components = [];
+            //缩略图联动
+            view.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap7();
+            });
+            function LinkMap7() {
+                overview3.zoom = view.zoom;
+                overview3.center = view.center;
+                overview3.scale = view.scale*8;
+            }
+
+            overview3.on(["pointer-down", "pointer-move",'mouse-wheel'], function () {
+                LinkMap8();
+            });
+            function LinkMap8() {
+                view.zoom = overview3.zoom;
+                view.center = overview3.center;
+            }
+            overview3.on("click", function () {
+                LinkMap9();
+            });
+            function LinkMap9() {
+                view.map = overview3.map;
+            }
+            //(6)经纬度显示
+            view.on('pointer-move', function (event) {
+                let point = view.toMap({x: event.x, y: event.y});
+                $('#lat').text(point.latitude.toFixed(6));
+                $('#lon').text(point.longitude.toFixed(6));
+            });
+            //(7)比例尺和图层总数
+            view.when(function () {
+                $('#zoom').text(view.zoom.toFixed(0));
+                $('#scale').text(view.scale.toFixed(0));
+                //图层总数
+                const items = document.getElementsByName("layer");
+                $('#all').text(items.length);
+            });
+            view.on('mouse-wheel', function () {
+                $('#zoom').text(view.zoom.toFixed(0));
+                $('#scale').text(view.scale.toFixed(0));
+            });
+            //(8)故事图层
+            const layer_0 = new FeatureLayer({
+                id: "tu0",
+                title: "越南",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/0"
+            });
+            map.add(layer_0);
+            layer_0.visible=false;
+            const layer_1 = new FeatureLayer({
+                id: "tu1",
+                title: "东帝汶",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/1"
+            });
+            map.add(layer_1);
+            layer_1.visible=false;
+            let layer_2 = new FeatureLayer({
+                id: "tu2",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/2"
+            });
+            map.add(layer_2);
+            layer_2.visible=false;
+            let layer_3 = new FeatureLayer({
+                id: "tu3",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/3"
+            });
+            map.add(layer_3);
+            layer_3.visible=false;
+            let layer_4 = new FeatureLayer({
+                id: "tu4",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/4"
+            });
+            map.add(layer_4);
+            layer_4.visible=false;
+            let layer_5 = new FeatureLayer({
+                id: "tu5",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/5"
+            });
+            map.add(layer_5);
+            layer_5.visible=false;
+            let layer_6 = new FeatureLayer({
+                id: "tu6",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/6"
+            });
+            map.add(layer_6);
+            layer_6.visible=false;
+            let layer_7 = new FeatureLayer({
+                id: "tu7",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/7"
+            });
+            map.add(layer_7);
+            layer_7.visible=false;
+            let layer_8 = new FeatureLayer({
+                id: "tu8",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/8"
+            });
+            map.add(layer_8);
+            layer_8.visible=false;
+            let layer_9 = new FeatureLayer({
+                id: "tu9",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/9"
+            });
+            map.add(layer_9);
+            layer_9.visible=false;
+            let layer_10 = new FeatureLayer({
+                id: "tu10",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/SoutheasternAsia/FeatureServer/10"
+            });
+            map.add(layer_10);
+            layer_10.visible=false;
+            let layer_11 = new FeatureLayer({
+                id: "tu11",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/area/FeatureServer/0"
+            });
+            map.add(layer_11);
+            layer_11.visible=false;
+            let layer_12 = new FeatureLayer({
+                id: "tu12",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/AGDP/FeatureServer/0"
+            });
+            map.add(layer_12);
+            layer_12.visible=false;
+            let layer_13 = new FeatureLayer({
+                id: "tu13",
+                title: "Dynamic Map Service",
+                url: "https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/PGDP/FeatureServer/0"
+            });
+            map.add(layer_13);
+            layer_13.visible=false;
+            // (9)查询
+            const gl = new FeatureLayer({
+                id:"gl",
+                url:"https://services3.arcgis.com/6dMtoiUwG5Yj3P4e/arcgis/rest/services/South/FeatureServer/0"
+            });
+            gl.popupTemplate = new PT({
+                title: "{name}",
+                content:"点击了{name}({NAME_1}市),英文名{NAME_0}"
+            });
+            gl.opacity = 0.3;
+            map.add(gl);
+            gl.visible=false;
+            //收起框框
+            // $("#mapMenu_btn").click(() => {
+            //     $("#mapMenu").fadeToggle();
+            // })
+            //等同于上一段
+            $("#echart_btn").click(() => {
+                $("#tableMenu").fadeToggle();
+            })
+            $("#mapMenu_btn").click(function(){
+                $("#mapMenu").fadeToggle();
+            })
+            $("#layerMenu_btn").click(function(){
+                $("#layerMenu").fadeToggle();
+            })
+            $("#goMenu_btn").click(function(){
+                $("#goMenu").fadeToggle();
+            })
+            $("#Menu_btn").click(function(){
+                $("#Menu").fadeToggle();
+            })
+            //地图跳转
+            $("#tobtn1").click(function() {
+                view.goTo([120.983955,14.599848]).then(display);
+            })
+            function display(){
+                view.zoom =10;
+            }
+            $("#tobtn2").click(function() {
+                view.goTo([114.915209,4.859327]).then(display);
+            })
+            $("#tobtn3").click(function() {
+                view.goTo([106.846889,-6.197642]).then(display);
+            })
+            $("#tobtn4").click(function() {
+                view.goTo([125.560601,-8.550274]).then(display);
+            })
+            $("#tobtn5").click(function() {
+                view.goTo([103.863242,1.335302]).then(display);
+            })
+            $("#tobtn6").click(function() {
+                view.goTo([102.631563,17.97964]).then(display);
+            })
+            $("#tobtn7").click(function() {
+                view.goTo([96.164267,16.817588]).then(display);
+            })
+            $("#tobtn8").click(function() {
+                view.goTo([108.203573,16.060474]).then(display);
+            })
+            $("#tobtn9").click(function() {
+                view.goTo([101.388615,2.998795]).then(display);
+            })
+            $("#tobtn10").click(function() {
+                view.goTo([100.551853,13.709793]).then(display);
+            })
+            $("#tobtn11").click(function() {
+                view.goTo([104.891017,11.548133]).then(display);
+            })
+
+            //(10)图表
+            var chartDom = document.getElementById('echart_dny');
+            var myChart = echarts.init(chartDom);
+            var option;
+            option = {
+                legend: {
+                    data: ['面积', '2019年总GDP', '2019年人均GDP'],
+                    selected: {
+                        '2019年人均GDP': false,
+                    }
+                },
+                title: {text: '东南亚11国信息', bottom: 'bottom',},
+                tooltip: {},
+                dataset: {
+                    source: [
+                        ['国家','面积', '2019年总GDP', '2019年人均GDP'],
+                        ['印度尼西亚', 1913578.68, 11200, 4135,],
+                        ['马来西亚', 330000, 3646.81, 11414,],
+                        ['东帝汶', 15007, 20.18, 1560,],
+                        ['新加坡', 724.4, 3720.63, 65233,],
+                        ['柬埔寨', 180000, 270.89, 1643,],
+                        ['菲律宾', 299700, 3767.96, 3485,],
+                        ['缅甸', 676578, 760.86, 1407,],
+                        ['老挝', 236800, 181.74, 2534,],
+                        ['文莱', 5765, 134.69, 31086,],
+                        ['越南', 329556, 2619.21, 2715,],
+                        ['泰国', 513000, 5435.49, 7806,],
+                    ]
+                },
+                yAxis: {type: 'category',},
+                xAxis: {},
+
+                series: [
+                    {type: 'bar'},
+                    {type: 'bar'},
+                    {type: 'bar'},
+                ]
+            };
+            option && myChart.setOption(option);
+
+
+
+        });
+        //(1)图层列表
+        function Addlayer(event) {
+            //if($("tu1")[0].checked)判定是否勾选
+            let item = $(event)[0];
+            map.findLayerById(item.id).visible= item.checked;
+        }
+        function dellayer(event){
+            let item = $(event)[0].parentElement.children[0];
+            // console.log($(event)[0]);
+            // console.log($(event)[0].parentElement);
+            // console.log($(event)[0].parentElement.children[0]);
+            map.remove(map.findLayerById(item.id));
+            $(event).parent().remove();
+        }
+
+    </script>
+
+</head>
+<body>
+<div id="viewDiv"></div>
+<div class="panel panel-default" id="goMenu">
+    <div class="panel-heading">
+        地图跳转
+    </div>
+    <div class="panel-body">
+        <form>
+            <a class="btn" id="tobtn1"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（菲律宾）马尼拉</a>
+            <a class="btn" id="tobtn2"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（文莱）斯里巴加湾</a>
+            <a class="btn" id="tobtn3"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（印尼）雅加达</a>
+            <a class="btn" id="tobtn4"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（东帝汶）帝力</a>
+            <a class="btn" id="tobtn5"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（新加坡）新加坡</a>
+            <a class="btn" id="tobtn6"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（老挝）万象</a>
+            <a class="btn" id="tobtn7"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（缅甸）仰光</a>
+            <a class="btn" id="tobtn8"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（越南）岘港</a>
+            <a class="btn" id="tobtn9"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（马来西亚）巴生港</a>
+            <a class="btn" id="tobtn10"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（泰国）曼谷港</a>
+            <a class="btn" id="tobtn11"><span class="glyphicon glyphicon-open" style="color: rgb(81, 77, 60); font-size: 18px;"></span>（柬埔寨）金边</a>
+        </form>
+    </div>
+</div>
+<div class="panel panel-default" id="mapMenu">
+    <div class="panel-heading">
+        底图切换
+    </div>
+    <div class="panel-body">
+        <form>
+            <div class="overview" id="overviewDiv1"></div>
+            <div class="overview" id="overviewDiv2"></div>
+            <div class="overview" id="overviewDiv3"></div>
+        </form>
+    </div>
+    <div class="panel-footer">
+        <p><label for="tu11"></label><input id="tu11" type="checkbox" name="layer" value="layer12" onclick="Addlayer(this)"/>各国面积图&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+        <p><label for="tu12"></label><input id="tu12" type="checkbox" name="layer" value="layer12" onclick="Addlayer(this)"/>生产总值图&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+        <p><label for="tu13"></label><input id="tu13" type="checkbox" name="layer" value="layer12" onclick="Addlayer(this)"/>生产人均图&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+    </div>
+
+</div>
+<div class="panel panel-default" id="layerMenu">
+    <div class="panel-heading">
+        图层总数:&nbsp;<span id="all">0</span>&nbsp;
+    </div>
+    <div class="panel-body">
+        <form>
+            <p><label for="gl"></label><input id="gl" type="checkbox" name="layer" value="layer12" onclick="Addlayer(this)"/>东南亚&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu9"></label><input id="tu9" type="checkbox" name="layer" value="layer10" onclick="Addlayer(this)"/>印度尼西亚&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu5"></label><input id="tu5" type="checkbox" name="layer" value="layer6" onclick="Addlayer(this)"/>马来西亚&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu1"></label><input id="tu1" type="checkbox" name="layer" value="layer2" onclick="Addlayer(this)"/>东帝汶&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu2"></label><input id="tu2" type="checkbox" name="layer" value="layer3" onclick="Addlayer(this)"/>新加坡&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu8"></label><input id="tu8" type="checkbox" name="layer" value="layer9" onclick="Addlayer(this)"/>柬埔寨&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu4"></label><input id="tu4" type="checkbox" name="layer" value="layer5" onclick="Addlayer(this)"/>菲律宾&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu6"></label><input id="tu6" type="checkbox" name="layer" value="layer7" onclick="Addlayer(this)"/>缅甸&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu7"></label><input id="tu7" type="checkbox" name="layer" value="layer8" onclick="Addlayer(this)"/>老挝&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu10"></label><input id="tu10" type="checkbox" name="layer" value="layer11" onclick="Addlayer(this)"/>文莱&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu0"></label><input id="tu0" type="checkbox" name="layer" value="layer1" onclick="Addlayer(this)"/>越南&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+            <p><label for="tu3"></label><input id="tu3" type="checkbox" name="layer" value="layer4" onclick="Addlayer(this)"/>泰国&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <button type="button" onclick = "dellayer(this)" class="glyphicon glyphicon-trash"></button></p>
+        </form>
+    </div>
+</div>
+
+<!--图表-->
+<div class="panel panel-default" id="tableMenu">
+    <div class="panel-heading">
+        东南亚11国信息
+    </div>
+    <div class="panel-body">
+        <form>
+            <div id="echart_dny" ></div>
+        </form>
+    </div>
+</div>
+<a class="btn" id="Menu_btn"><span class="glyphicon glyphicon-th-large" style="color: rgb(81, 77, 60); font-size: 18px;"></span></a>
+<div class="panel panel-default" id="Menu">
+    <div class="panel-heading">
+        工具栏
+    </div>
+    <div class="panel-body">
+        <form>
+            <a class="btn" id="echart_btn"><span class="glyphicon glyphicon-stats" style="color: rgb(81, 77, 60); font-size: 18px;"></span></a>
+            <a class="btn" id="layerMenu_btn"><span class="glyphicon glyphicon-resize-horizontal" style="color: rgb(81, 77, 60); font-size: 18px;width: 10px"></span></a>
+            <a class="btn" id="mapMenu_btn"><span class="glyphicon glyphicon-transfer" style="color: rgb(81, 77, 60); font-size: 18px;"></span></a>
+            <a class="btn" id="goMenu_btn"><span class="glyphicon glyphicon-share-alt" style="color: rgb(81, 77, 60); font-size: 18px;"></span></a>
+        </form>
+    </div>
+</div>
+<!--  坐标-->
+<div class="panel panel-default" id="jingweidu">
+    经度:&nbsp;<span id="lon">0</span>&nbsp;
+    纬度:&nbsp;<span id="lat">0</span>&nbsp;
+</div>
+<!--比例尺-->
+<div class="panel panel-default" id="zoomweizhi">
+    缩放等级:&nbsp;<span id="zoom"></span>&nbsp;&nbsp;
+    比例尺:&nbsp;1/<span id="scale"></span>
+</div>
+
+</body>
+</html>
